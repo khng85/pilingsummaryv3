@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piling Works Record & Tracking</title>
+<style>
+  :root {
+    --primary: #1a5276;
+    --primary-light: #2980b9;
+    --accent: #27ae60;
+    --danger: #c0392b;
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --text: #2c3e50;
+    --border: #d5d8dc;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ─── App ─── */
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  header h1 { font-size: 1.3rem; font-weight: 600; }
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+  }
+  .stats span { opacity: 0.9; }
+  .stats strong { color: #fff; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+  .card {
+    background: var(--card);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .card h2 {
+    font-size: 1rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #5d6d7e;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+  .form-group input, .form-group select {
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+  }
+  .form-group input[readonly] {
+    background: #f8f9fa;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .btn {
+    padding: 0.55rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-success { background: var(--accent); color: #fff; }
+  .btn-success:hover { opacity: 0.9; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: 0.9; }
+  .btn-secondary { background: #85929e; color: #fff; }
+  .btn-secondary:hover { opacity: 0.9; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { background: var(--bg); }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  .toolbar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .toolbar input[type="search"] {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    min-width: 220px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 0.6rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #eaf2f8;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  tr:hover { background: #f8f9fa; }
+  tr.selected { background: #d4efdf !important; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #85929e;
+  }
+  .empty-state svg { width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.4; }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  .modal-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 { font-size: 1rem; color: var(--primary); }
+  .modal-close {
+    background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: #85929e; line-height: 1;
+  }
+  .modal-body { padding: 1.25rem; }
+  .modal-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .summary-card {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .summary-card.green { background: linear-gradient(135deg, #1e8449, var(--accent)); }
+  .summary-card.orange { background: linear-gradient(135deg, #d68910, #f39c12); }
+  .summary-card.red { background: linear-gradient(135deg, #922b21, var(--danger)); }
+  .summary-card .value { font-size: 1.6rem; font-weight: 700; }
+  .summary-card .label { font-size: 0.7rem; opacity: 0.85; text-transform: uppercase; margin-top: 0.25rem; }
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--text);
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    font-size: 0.85rem;
+    transform: translateY(120%);
+    transition: transform 0.3s ease;
+    z-index: 200;
+  }
+  .toast.show { transform: translateY(0); }
+  .hidden { display: none !important; }
+    .sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #fff;
+    opacity: 0.9;
+  }
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .sync-dot.offline { background: #e74c3c; }
+  .sync-dot.syncing { background: #f39c12; animation: pulse 1.5s infinite; }
+  .sync-dot.connected { background: #2ecc71; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .sync-buttons {
+    display: inline-flex;
+    gap: 0.3rem;
+    margin-left: 0.5rem;
+  }
+  .sync-buttons button {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .sync-buttons button:hover { background: rgba(255,255,255,0.2); }
+  .sync-buttons button:disabled { opacity: 0.4; cursor: default; }
+  @media (max-width: 768px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .stats { width: 100%; justify-content: space-between; }
+    th, td { padding: 0.4rem 0.3rem; font-size: 0.8rem; }
+  }
+</style>
+  <!-- Supabase JS SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.43.0/dist/umd/supabase.min.js"></script>
+
+</head>
+<body>
+
+<!-- ─── App ─── -->
+<header>
+  <h1>📋 Piling Works Record & Tracking</h1>
+  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <div class="stats">
+      <span>Total Piles: <strong id="statTotal">0</strong></span>
+      <span>OSD: <strong id="statOSD">0</strong></span>
+      <span>Main Building: <strong id="statMain">0</strong></span>
+      <span>Total Supply: <strong id="statSupply">0</strong> m</span>
+      <span>Total Driven: <strong id="statDriven">0</strong> m</span>
+      <span>Weld Joints: <strong id="statWeldJoints">0</strong></span>
+    </div>
+    <div class="sync-status">
+      <span class="sync-dot offline" id="syncDot"></span>
+      <span id="syncLabel">Offline</span>
+      <div class="sync-buttons">
+        <button id="btnSyncConnect" title="Connect to cloud">Connect</button>
+        <button id="btnSyncPush" title="Push local data to cloud" disabled>Push</button>
+        <button id="btnSyncPull" title="Pull cloud data to local" disabled>Pull</button>
+        <button id="btnSyncDisconnect" title="Disconnect from cloud" disabled>Disconnect</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+
+
+  <!-- Entry Form -->
+  <div class="card">
+    <h2 id="formTitle">➕ Add New Record</h2>
+    <form id="pilingForm">
+      <input type="hidden" id="editId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="location">Location</label>
+          <select id="location" required>
+            <option value="OSD">OSD</option>
+            <option value="Main Building">Main Building</option>
+          </select>
+          <div style="margin-top:0.5rem;display:flex;gap:0.3rem;">
+            <input type="text" id="newLocation" placeholder="Add new location..." style="flex:1;">
+          </div>
+          <div style="margin-top:0.25rem;display:flex;gap:0.3rem;">
+            <button type="button" class="btn btn-outline" style="font-size:0.75rem;padding:0.3rem 0.6rem;" onclick="addLocation()">➕ Add</button>
+            <button type="button" class="btn btn-outline" style="font-size:0.75rem;padding:0.3rem 0.6rem;" onclick="editLocation()">✏️ Edit</button>
+            <button type="button" class="btn btn-danger" style="font-size:0.75rem;padding:0.3rem 0.6rem;" onclick="deleteLocation()">🗑️ Delete</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="pileRef">Pile Ref No</label>
+          <input type="number" id="pileRef" placeholder="e.g. 866" required>
+        </div>
+        <div class="form-group">
+          <label for="pileType">Pile Type</label>
+          <input type="text" id="pileType" placeholder="e.g. RC Square" required>
+        </div>
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label for="init12m">Starter 12M</label>
+          <input type="number" id="init12m" min="0" value="0" required>
+        </div>
+        <div class="form-group">
+          <label for="ext12m">Ext 12M</label>
+          <input type="number" id="ext12m" min="0" value="0" required>
+        </div>
+        <div class="form-group">
+          <label for="ext9m">Ext 9M</label>
+          <input type="number" id="ext9m" min="0" value="0" required>
+        </div>
+        <div class="form-group">
+          <label for="ext6m">Ext 6M</label>
+          <input type="number" id="ext6m" min="0" value="0" required>
+        </div>
+        <div class="form-group">
+          <label for="ext3m">Ext 3M</label>
+          <input type="number" id="ext3m" min="0" value="0" required>
+        </div>
+            <div class="form-group">
+          <label for="actualDriven">Actual Driven Length (m)</label>
+          <input type="number" id="actualDriven" step="0.01" min="0" value="0" required>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="btnSave">💾 Save Record</button>
+        <button type="button" class="btn btn-secondary hidden" id="btnCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Records Table -->
+  <div class="card">
+    <h2>📊 Records</h2>
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="Search by ref no, location, date...">
+      <button class="btn btn-outline" id="btnExportCSV">📥 Export CSV</button>
+      <button class="btn btn-outline" id="btnImportCSV">📤 Import CSV</button>
+      <button class="btn btn-outline" id="btnTemplate">📄 Template</button>
+      <button class="btn btn-outline" id="btnBulkImport">📂 Bulk Import</button>
+      <input type="file" id="fileImport" accept=".csv" class="hidden">
+      <input type="file" id="fileBulkImport" accept=".csv" class="hidden">
+      <button class="btn btn-danger" id="btnClearAll">🗑️ Clear All</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="recordsTable">
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>Pile Ref No</th>
+            <th>Pile Type</th>
+            <th>Date</th>
+            <th class="text-center">Starter 12M</th>
+            <th class="text-center">Ext 12M</th>
+            <th class="text-center">Ext 9M</th>
+            <th class="text-center">Ext 6M</th>
+            <th class="text-center">Ext 3M</th>
+            <th class="text-right">Starter Supply (m)</th>
+            <th class="text-right">Extension Supply (m)</th>
+            <th class="text-right">Total Supply (m)</th>
+            <th class="text-right">Actual Driven (m)</th>
+            <th class="text-center">Weld Joints</th>
+            <th class="text-right">Starter 12M (m)</th>
+            <th class="text-right">Ext 12M (m)</th>
+            <th class="text-right">Ext 9M (m)</th>
+            <th class="text-right">Ext 6M (m)</th>
+            <th class="text-right">Ext 3M (m)</th>
+            <th class="text-right">Wastage (m)</th>
+            <th class="text-right">Wastage %</th>
+            <th style="width:100px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- rows injected -->
+        </tbody>
+      </table>
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p>No records yet. Add your first piling record above.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <h3>Confirm Delete</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this record? This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="btnConfirmDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+
+  // ═══════════════════════════════════════
+  //  APP STATE
+  // ═══════════════════════════════════════
+  const STORAGE_KEY = 'pilingRecords_v1';
+  let records = [];
+  let deleteTargetId = null;
+
+  function loadRecords() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) records = JSON.parse(data);
+    } catch(e) { records = []; }
+  }
+
+  function saveRecords() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    scheduleAutoSync();
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    const date = new Date(d);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('en-GB');
+  }
+
+  function calcSupply(r) {
+    return (r.init12m * 12) + (r.ext12m * 12) + (r.ext9m * 9) + (r.ext6m * 6) + (r.ext3m * 3);
+  }
+
+  function calcStarterDriven(r) {
+    return (r.init12m || 0) * 12;
+  }
+
+  function calcExtDriven(r) {
+    return (r.ext12m || 0) * 12 + (r.ext9m || 0) * 9 + (r.ext6m || 0) * 6 + (r.ext3m || 0) * 3;
+  }
+
+  function calcWeldJoints(r) {
+    return (r.ext12m || 0) + (r.ext9m || 0) + (r.ext6m || 0) + (r.ext3m || 0);
+  }
+
+  // Calculate individual pile length for display
+  // Each extension type shows its full length, except the LAST non-zero type
+  // which shows the remainder: actualDriven - sum of all previous full lengths
+  function calcPileLength(r, type) {
+    const actual = r.actualDriven || 0;
+    const starter = (r.init12m || 0) * 12;
+    const ext12 = (r.ext12m || 0) * 12;
+    const ext9 = (r.ext9m || 0) * 9;
+    const ext6 = (r.ext6m || 0) * 6;
+    const ext3 = (r.ext3m || 0) * 3;
+
+    // Find the last non-zero extension type (check in reverse order: ext3, ext6, ext9, ext12)
+    let lastType = null;
+    if ((r.ext3m || 0) > 0) lastType = 'ext3';
+    else if ((r.ext6m || 0) > 0) lastType = 'ext6';
+    else if ((r.ext9m || 0) > 0) lastType = 'ext9';
+    else if ((r.ext12m || 0) > 0) lastType = 'ext12';
+
+    switch(type) {
+      case 'starter': return starter;
+      case 'ext12':
+        if (lastType === 'ext12') {
+          // Last pile is ext12: remainder after starter
+          return actual - starter;
+        }
+        return ext12; // Not last, show full length
+      case 'ext9':
+        if (lastType === 'ext9') {
+          // Last pile is ext9: remainder after starter + ext12
+          return actual - starter - ext12;
+        } else if (lastType === 'ext12') {
+          // ext12 is last, ext9 not used
+          return 0;
+        }
+        return ext9; // Not last, show full length
+      case 'ext6':
+        if (lastType === 'ext6') {
+          // Last pile is ext6: remainder after starter + ext12 + ext9
+          return actual - starter - ext12 - ext9;
+        } else if (['ext12', 'ext9'].includes(lastType)) {
+          // ext12 or ext9 is last, ext6 not used
+          return 0;
+        }
+        return ext6; // Not last, show full length
+      case 'ext3':
+        if (lastType === 'ext3') {
+          // Last pile is ext3: remainder after starter + ext12 + ext9 + ext6
+          return actual - starter - ext12 - ext9 - ext6;
+        } else if (['ext12', 'ext9', 'ext6'].includes(lastType)) {
+          // ext12, ext9, or ext6 is last, ext3 not used
+          return 0;
+        }
+        return ext3; // Not last, show full length
+      default: return 0;
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function updateStats() {
+    const total = records.length;
+    const osd = records.filter(r => r.location === 'OSD').length;
+    const main = records.filter(r => r.location === 'Main Building').length;
+    const supply = records.reduce((s, r) => s + calcSupply(r), 0);
+
+    // Header stats: Total Supply and Total Driven
+    const totalStarterDriven = records.reduce((s, r) => s + calcStarterDriven(r), 0);
+    const totalExtDriven = records.reduce((s, r) => s + calcExtDriven(r), 0);
+    const totalAllDriven = totalStarterDriven + totalExtDriven;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statOSD').textContent = osd;
+    document.getElementById('statMain').textContent = main;
+    document.getElementById('statSupply').textContent = supply.toFixed(1);
+    const totalActualDriven = records.reduce((s, r) => s + (r.actualDriven || 0), 0);
+    document.getElementById('statDriven').textContent = totalActualDriven.toFixed(1);
+
+    const weldJoints = records.reduce((s, r) => s + calcWeldJoints(r), 0);
+    document.getElementById('statWeldJoints').textContent = weldJoints;
+  }
+
+  function renderTable(filterText = '') {
+    const tbody = document.getElementById('tableBody');
+    const empty = document.getElementById('emptyState');
+    const ft = filterText.toLowerCase();
+
+    const filtered = records.filter(r => {
+      if (!ft) return true;
+      return (
+        (r.location || '').toLowerCase().includes(ft) ||
+        String(r.pileRef).includes(ft) ||
+        (r.date || '').includes(ft)
+      );
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    // Sort by date desc, then ref no asc
+    filtered.sort((a, b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      if (da < db) return 1; if (da > db) return -1;
+      return (a.pileRef || 0) - (b.pileRef || 0);
+    });
+
+    // Group by location + pileType combination
+    const grouped = {};
+    filtered.forEach(r => {
+      const loc = r.location || 'OSD';
+      const pt = r.pileType || 'Uncategorized';
+      const key = loc + '::' + pt;
+      if (!grouped[key]) grouped[key] = { location: loc, pileType: pt, records: [] };
+      grouped[key].records.push(r);
+    });
+
+    let html = '';
+    Object.values(grouped).forEach(g => {
+      const records = g.records;
+      // Combined Location + Pile Type header
+      html += `<tr style="background:#e3f2fd;font-weight:700;"><td colspan="22" style="padding:0.5rem 1rem;">${escapeHtml(g.location)} — ${escapeHtml(g.pileType)} (${records.length} records)</td></tr>`;
+      // Records rows
+      html += records.map(r => {
+        const supply = calcSupply(r);
+        const wastage = calcSupply(r) - (r.actualDriven || 0);
+        const wastagePct = calcSupply(r) > 0 ? (((calcSupply(r) - (r.actualDriven || 0)) / calcSupply(r)) * 100).toFixed(2) + '%' : '0.00%';
+        return `
+          <tr data-id="${r.id}">
+            <td>${escapeHtml(r.location || '')}</td>
+            <td>${escapeHtml(String(r.pileRef))}</td>
+            <td>${escapeHtml(r.pileType || "-")}</td>
+            <td>${escapeHtml(formatDate(r.date))}</td>
+            <td class="text-center">${r.init12m || '-'}</td>
+            <td class="text-center">${r.ext12m || '-'}</td>
+            <td class="text-center">${r.ext9m || '-'}</td>
+            <td class="text-center">${r.ext6m || '-'}</td>
+            <td class="text-center">${r.ext3m || '-'}</td>
+            <td class="text-right">${calcStarterDriven(r).toFixed(2)}</td>
+            <td class="text-right">${calcExtDriven(r).toFixed(2)}</td>
+            <td class="text-right">${calcSupply(r).toFixed(2)}</td>
+            <td class="text-right">${(r.actualDriven || 0).toFixed(2)}</td>
+            <td class="text-center">${calcWeldJoints(r)}</td>
+            <td class="text-right">${calcPileLength(r, 'starter').toFixed(2)}</td>
+            <td class="text-right">${calcPileLength(r, 'ext12').toFixed(2)}</td>
+            <td class="text-right">${calcPileLength(r, 'ext9').toFixed(2)}</td>
+            <td class="text-right">${calcPileLength(r, 'ext6').toFixed(2)}</td>
+            <td class="text-right">${calcPileLength(r, 'ext3').toFixed(2)}</td>
+            <td class="text-right">${wastage.toFixed(2)}</td>
+            <td class="text-right">${wastagePct}</td>
+            <td>
+              <button class="btn btn-outline" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="editRecord('${r.id}')">✏️</button>
+              <button class="btn btn-danger" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="confirmDelete('${r.id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      // Group totals row
+      const gTotalSupply = records.reduce((s, r) => s + calcSupply(r), 0);
+      const gTotalActual = records.reduce((s, r) => s + (r.actualDriven || 0), 0);
+      const gTotalWastage = gTotalSupply - gTotalActual;
+      const gWastagePct = gTotalSupply > 0 ? ((gTotalWastage / gTotalSupply) * 100).toFixed(2) + '%' : '0.00%';
+      html += `
+        <tr style="background:#fff8e1;font-weight:700;">
+          <td colspan="4" style="text-align:right;padding:0.5rem 1rem;">Total ${escapeHtml(g.location)} — ${escapeHtml(g.pileType)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + (r.init12m || 0), 0)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + (r.ext12m || 0), 0)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + (r.ext9m || 0), 0)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + (r.ext6m || 0), 0)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + (r.ext3m || 0), 0)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcStarterDriven(r), 0).toFixed(2)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcExtDriven(r), 0).toFixed(2)}</td>
+          <td class="text-right">${gTotalSupply.toFixed(2)}</td>
+          <td class="text-right">${gTotalActual.toFixed(2)}</td>
+          <td class="text-center">${records.reduce((s, r) => s + calcWeldJoints(r), 0)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcPileLength(r, 'starter'), 0).toFixed(2)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcPileLength(r, 'ext12'), 0).toFixed(2)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcPileLength(r, 'ext9'), 0).toFixed(2)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcPileLength(r, 'ext6'), 0).toFixed(2)}</td>
+          <td class="text-right">${records.reduce((s, r) => s + calcPileLength(r, 'ext3'), 0).toFixed(2)}</td>
+          <td class="text-right">${gTotalWastage.toFixed(2)}</td>
+          <td class="text-right">${gWastagePct}</td>
+          <td></td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function addLocation() {
+    const input = document.getElementById('newLocation');
+    const value = input.value.trim();
+    if (!value) { showToast('Please enter a location name'); return; }
+    const select = document.getElementById('location');
+    // Check if already exists
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === value) { showToast('Location already exists'); return; }
+    }
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+    select.value = value;
+    input.value = '';
+    showToast('Location added: ' + value);
+  }
+
+  function editLocation() {
+    const select = document.getElementById('location');
+    const selected = select.options[select.selectedIndex];
+    if (!selected) { showToast('Please select a location to edit'); return; }
+    const oldValue = selected.value;
+    const newValue = prompt('Edit location name:', oldValue);
+    if (!newValue || newValue.trim() === '') return;
+    const trimmed = newValue.trim();
+    if (trimmed === oldValue) return;
+    // Check if new name already exists
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === trimmed) { showToast('Location already exists'); return; }
+    }
+    // Update option
+    selected.value = trimmed;
+    selected.textContent = trimmed;
+    // Update all records with old location name
+    let updated = 0;
+    records.forEach(r => {
+      if (r.location === oldValue) { r.location = trimmed; updated++; }
+    });
+    if (updated > 0) {
+      saveRecords();
+      renderTable(document.getElementById('searchInput').value);
+      updateStats();
+    }
+    showToast('Location updated: ' + oldValue + ' → ' + trimmed);
+  }
+
+  function deleteLocation() {
+    const select = document.getElementById('location');
+    const selected = select.options[select.selectedIndex];
+    if (!selected) { showToast('Please select a location to delete'); return; }
+    const value = selected.value;
+    // Check if any records use this location
+    const inUse = records.some(r => r.location === value);
+    if (inUse) {
+      if (!confirm('Location "' + value + '" is used by ' + records.filter(r => r.location === value).length + ' record(s). Delete anyway? Records will keep this location name.')) return;
+    } else {
+      if (!confirm('Delete location "' + value + '"?')) return;
+    }
+    select.remove(select.selectedIndex);
+    // Select first option
+    if (select.options.length > 0) select.selectedIndex = 0;
+    showToast('Location deleted: ' + value);
+  }
+
+  function resetForm() {
+    document.getElementById('pilingForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('formTitle').textContent = '➕ Add New Record';
+    document.getElementById('btnSave').textContent = '💾 Save Record';
+    document.getElementById('btnCancel').classList.add('hidden');
+    // Set default date to today
+    document.getElementById('date').valueAsDate = new Date();
+  }
+
+  // Event: form submit
+  document.getElementById('pilingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    const record = {
+      id: editId || generateId(),
+      location: String(document.getElementById('location').value),
+      pileRef: parseInt(document.getElementById('pileRef').value),
+      pileType: document.getElementById('pileType').value,
+      date: document.getElementById('date').value,
+      init12m: parseInt(document.getElementById('init12m').value) || 0,
+      ext12m: parseInt(document.getElementById('ext12m').value) || 0,
+      ext9m: parseInt(document.getElementById('ext9m').value) || 0,
+      ext6m: parseInt(document.getElementById('ext6m').value) || 0,
+      ext3m: parseInt(document.getElementById('ext3m').value) || 0,
+      actualDriven: parseFloat(document.getElementById('actualDriven').value) || 0
+    };
+
+    if (editId) {
+      const idx = records.findIndex(r => r.id === editId);
+      if (idx >= 0) records[idx] = record;
+      showToast('Record updated successfully');
+    } else {
+      records.push(record);
+      showToast('Record saved successfully');
+    }
+
+    saveRecords();
+    updateStats();
+    renderTable(document.getElementById('searchInput').value);
+    resetForm();
+    pushToCloud();
+  });
+
+
+
+  // Cancel edit
+  document.getElementById('btnCancel').addEventListener('click', resetForm);
+
+  // Search
+  document.getElementById('searchInput').addEventListener('input', function() {
+    renderTable(this.value);
+  });
+
+  // Export CSV
+  document.getElementById('btnExportCSV').addEventListener('click', function() {
+    if (records.length === 0) { showToast('No records to export'); return; }
+    const headers = ['Location','Pile Ref No','Pile Type','Date','Starter 12M','Ext 12M','Ext 9M','Ext 6M','Ext 3M','Starter Supply (M)','Extension Supply (M)','Total Supply (M)','Actual Driven (M)','Weld Joints','Starter 12M (M)','Ext 12M (M)','Ext 9M (M)','Ext 6M (M)','Ext 3M (M)','Wastage (M)','Wastage %'];
+    const rows = records.map(r => [
+      r.location, r.pileRef, r.pileType || '', r.date, r.init12m, r.ext12m, r.ext9m, r.ext6m, r.ext3m,
+      calcStarterDriven(r).toFixed(2), calcExtDriven(r).toFixed(2), calcSupply(r).toFixed(2), (r.actualDriven || 0).toFixed(2), calcWeldJoints(r),
+      calcPileLength(r, 'starter').toFixed(2), calcPileLength(r, 'ext12').toFixed(2), calcPileLength(r, 'ext9').toFixed(2), calcPileLength(r, 'ext6').toFixed(2), calcPileLength(r, 'ext3').toFixed(2),
+      (calcSupply(r) - (r.actualDriven || 0)).toFixed(2), calcSupply(r) > 0 ? (((calcSupply(r) - (r.actualDriven || 0)) / calcSupply(r)) * 100).toFixed(2) + '%' : '0.00%'
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'piling_records_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exported successfully');
+  });
+
+  // Import CSV
+  document.getElementById('btnImportCSV').addEventListener('click', function() {
+    document.getElementById('fileImport').click();
+  });
+  document.getElementById('fileImport').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const text = ev.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { showToast('CSV file is empty or invalid'); return; }
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 10) continue;
+        imported.push({
+          id: generateId(),
+          location: String(cols[0].trim()),
+          pileRef: parseInt(cols[1]) || 0,
+          pileType: cols[2].trim(),
+          date: cols[3].trim(),
+          init12m: parseInt(cols[4]) || 0,
+          ext12m: parseInt(cols[5]) || 0,
+          ext9m: parseInt(cols[6]) || 0,
+          ext6m: parseInt(cols[7]) || 0,
+          ext3m: parseInt(cols[8]) || 0,
+          actualDriven: parseFloat(cols[9]) || 0
+        });
+      }
+      if (imported.length > 0) {
+        records = imported;
+        saveRecords();
+        updateStats();
+        renderTable();
+        showToast(`Imported ${imported.length} records`);
+        pushToCloud();
+      } else {
+        showToast('No valid records found in CSV');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (c === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += c;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  // Template download
+  document.getElementById('btnTemplate').addEventListener('click', function() {
+    const headers = ['Location','Pile Ref No','Pile Type','Date','Starter 12M','Ext 12M','Ext 9M','Ext 6M','Ext 3M','Actual Driven (M)'];
+    const sample = ['Main Building','101','RC Square','2026-05-11','1','1','0','0','0','24.50'];
+    const csv = [headers, sample].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'piling_record_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Template downloaded');
+  });
+
+  // Bulk Import (append to existing records)
+  document.getElementById('btnBulkImport').addEventListener('click', function() {
+    document.getElementById('fileBulkImport').click();
+  });
+  document.getElementById('fileBulkImport').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const text = ev.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { showToast('CSV file is empty or invalid'); return; }
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 10) continue;
+        imported.push({
+          id: generateId(),
+          location: String(cols[0].trim()),
+          pileRef: parseInt(cols[1]) || 0,
+          pileType: cols[2].trim(),
+          date: cols[3].trim(),
+          init12m: parseInt(cols[4]) || 0,
+          ext12m: parseInt(cols[5]) || 0,
+          ext9m: parseInt(cols[6]) || 0,
+          ext6m: parseInt(cols[7]) || 0,
+          ext3m: parseInt(cols[8]) || 0,
+          actualDriven: parseFloat(cols[9]) || 0
+        });
+      }
+      if (imported.length > 0) {
+        records = records.concat(imported);
+        saveRecords();
+        updateStats();
+        renderTable();
+        showToast(`Bulk imported ${imported.length} records`);
+        pushToCloud();
+      } else {
+        showToast('No valid records found in CSV');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // Clear all
+  document.getElementById('btnClearAll').addEventListener('click', function() {
+    if (!confirm('Are you sure you want to delete ALL records? This cannot be undone.')) return;
+    records = [];
+    saveRecords();
+    updateStats();
+    renderTable();
+    showToast('All records cleared');
+    pushToCloud();
+  });
+
+  // Global functions for inline buttons
+  window.addLocation = addLocation;
+  window.editLocation = editLocation;
+  window.deleteLocation = deleteLocation;
+  window.editRecord = function(id) {
+    const r = records.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('editId').value = r.id;
+    document.getElementById('location').value = r.location;
+    document.getElementById('pileRef').value = r.pileRef;
+    document.getElementById('pileType').value = r.pileType || '';
+    document.getElementById('date').value = r.date;
+    document.getElementById('init12m').value = r.init12m;
+    document.getElementById('ext12m').value = r.ext12m;
+    document.getElementById('ext9m').value = r.ext9m;
+    document.getElementById('ext6m').value = r.ext6m;
+    document.getElementById('ext3m').value = r.ext3m;
+    document.getElementById('actualDriven').value = r.actualDriven || 0;
+    document.getElementById('formTitle').textContent = '✏️ Edit Record';
+    document.getElementById('btnSave').textContent = '💾 Update Record';
+    document.getElementById('btnCancel').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.confirmDelete = function(id) {
+    deleteTargetId = id;
+    document.getElementById('deleteModal').classList.add('active');
+  };
+
+  window.closeModal = function(id) {
+    document.getElementById(id).classList.remove('active');
+    deleteTargetId = null;
+  };
+
+  document.getElementById('btnConfirmDelete').addEventListener('click', function() {
+    if (deleteTargetId) {
+      records = records.filter(r => r.id !== deleteTargetId);
+      saveRecords();
+      updateStats();
+      renderTable(document.getElementById('searchInput').value);
+      showToast('Record deleted');
+      pushToCloud();
+    }
+    closeModal('deleteModal');
+  });
+
+  // Close modal on overlay click
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('deleteModal');
+  });
+
+  // ─── Init: load data and render on page load ───
+  // One-time migration: clear cache if it has old mismatched column names stored
+  // (prevents corrupted cloud-pulled data from showing on refresh)
+  try {
+    var cached = localStorage.getItem(STORAGE_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      if (parsed.length > 0 && parsed[0].pileRef === undefined) {
+        // Old cache has wrong keys (e.g. pileRef missing) — clear it
+        localStorage.removeItem(STORAGE_KEY);
+      } else if (parsed.length > 0) {
+        // Remove corrupted records where id is a location name (old Apps Script bug:
+        // column A was written as location value, making it an invalid id)
+        var KNOWN_LOCS = { 'OSD': 1, 'Main Building': 1, 'OSD Building': 1, '': 1 };
+        var before = parsed.length;
+        parsed = parsed.filter(function(r) { return !KNOWN_LOCS[r.id]; });
+        if (parsed.length < before) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
+      }
+    }
+  } catch(e) {}
+
+  loadRecords();
+  updateStats();
+  renderTable();
+  populateLocationOptions();
+  document.getElementById('date').valueAsDate = new Date();
+
+  // ─── Auto-connect to cloud on startup ───
+  connectCloud();
+
+  // ─── Helper: populate location select from existing records ───
+  function populateLocationOptions() {
+    const select = document.getElementById('location');
+    const existing = Array.from(select.options).map(o => o.value);
+    records.forEach(r => {
+      if (r.location && !existing.includes(r.location)) {
+        const option = document.createElement('option');
+        option.value = r.location;
+        option.textContent = r.location;
+        select.appendChild(option);
+        existing.push(r.location);
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════
+  //  SUPABASE CLOUD SYNC
+  // ═══════════════════════════════════════
+  let supabaseClient = null;
+  let isCloudConnected = false;
+  let syncInProgress = false;
+  let realtimeSubscription = null;
+  let autoSyncTimer = null;
+  let syncTableName = 'piling_records';
+
+  function updateSyncStatus(status, label) {
+    const dot = document.getElementById('syncDot');
+    const lbl = document.getElementById('syncLabel');
+    dot.className = 'sync-dot ' + status;
+    lbl.textContent = label;
+  }
+
+  function setSyncButtons(connected) {
+    document.getElementById('btnSyncConnect').disabled = connected;
+    document.getElementById('btnSyncPush').disabled = !connected || syncInProgress;
+    document.getElementById('btnSyncPull').disabled = !connected || syncInProgress;
+    document.getElementById('btnSyncDisconnect').disabled = !connected;
+  }
+
+  async function connectCloud() {
+    updateSyncStatus('connecting');
+
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+
+    try {
+      var response = await fetch(CLOUD_SCRIPT_URL);
+      var result = await response.json();
+
+      if (result.status === 'success') {
+        // Robust column name resolver: normalize key to lowercase+no-space, then fuzzy-match
+        var colCache = {};
+        function resolve(row, name) {
+          var norm = name.toLowerCase().replace(/[_\s-]/g, '');
+          if (colCache[norm] !== undefined) return row[colCache[norm]];
+          for (var k in row) {
+            if (k.toLowerCase().replace(/[_\s-]/g, '') === norm) {
+              colCache[norm] = k;
+              return row[k];
+            }
+          }
+          return undefined;
+        }
+        function gv(row, name, fallback) {
+          var val = resolve(row, name);
+          return (val !== undefined && val !== null && val !== '') ? val : fallback;
+        }
+        function gi(row, name, fallback) { var v = gv(row, name, fallback); return v === fallback ? fallback : parseInt(v, 10) || fallback; }
+        function gf(row, name, fallback) { var v = gv(row, name, fallback); return v === fallback ? fallback : parseFloat(v) || fallback; }
+
+        var mapped = result.data.map(function(row) {
+          // Location: prefer string value, fallback to numeric index (0=OSD, 1=Main Building)
+          var locRaw = gv(row, 'location', '');
+          var locationMap = { '0': 'OSD', '1': 'Main Building', 0: 'OSD', 1: 'Main Building' };
+          var location = locationMap[locRaw] || String(locRaw) || '';
+
+          return {
+            id:          gv(row, 'id',              '') || '',
+            location:    location,
+            pileRef:     gi(row, 'pileRef',          0) || gi(row, 'Pile Ref No', 0) || 0,
+            pileType:    gv(row, 'pileType',         '') || gv(row, 'Pile Type', '') || '',
+            date:        gv(row, 'date',             '') || '',
+            init12m:     gi(row, 'init12m',           0) || gi(row, 'Starter 12M', 0) || 0,
+            ext12m:      gi(row, 'ext12m',            0) || gi(row, 'Ext 12M', 0) || 0,
+            ext9m:       gi(row, 'ext9m',             0) || gi(row, 'Ext 9M', 0) || 0,
+            ext6m:       gi(row, 'ext6m',             0) || gi(row, 'Ext 6M', 0) || 0,
+            ext3m:       gi(row, 'ext3m',             0) || gi(row, 'Ext 3M', 0) || 0,
+            actualDriven:gf(row, 'actualDriven',     0) || gf(row, 'Actual Driven', 0) || 0
+          };
+        });
+
+        // Reject rows with obviously corrupted id (the old Apps Script writes the location
+        // value as id because column A = location). Location names are not valid ids.
+        var KNOWN_LOCATIONS = { 'OSD': 1, 'Main Building': 1, 'OSD Building': 1, '': 1 };
+        mapped = mapped.filter(function(r) { return !KNOWN_LOCATIONS[r.id]; });
+
+        // Merge cloud data with local: cloud fills in records the local copy doesn't have,
+        // but DON'T overwrite local data that already exists (avoids corrupting local on refresh)
+        var cloudIds = {};
+        mapped.forEach(function(r) { cloudIds[r.id] = r; });
+        var localIds = {};
+        records.forEach(function(r) { localIds[r.id] = r; });
+
+        // Add cloud-only records to local
+        mapped.forEach(function(r) {
+          if (!localIds[r.id]) records.push(r);
+        });
+
+        // Only overwrite local records if the cloud version has more complete data
+        records.forEach(function(r) {
+          if (cloudIds[r.id]) {
+            var cr = cloudIds[r.id];
+            // Only fill in missing/empty fields from cloud, don't clobber existing good data
+            if (!r.location && cr.location) r.location = cr.location;
+            if (!r.pileRef && cr.pileRef) r.pileRef = cr.pileRef;
+            if (!r.pileType && cr.pileType) r.pileType = cr.pileType;
+            if (!r.date && cr.date) r.date = cr.date;
+            if (!r.init12m && cr.init12m) r.init12m = cr.init12m;
+            if (!r.ext12m && cr.ext12m) r.ext12m = cr.ext12m;
+            if (!r.ext9m && cr.ext9m) r.ext9m = cr.ext9m;
+            if (!r.ext6m && cr.ext6m) r.ext6m = cr.ext6m;
+            if (!r.ext3m && cr.ext3m) r.ext3m = cr.ext3m;
+            if (!r.actualDriven && cr.actualDriven) r.actualDriven = cr.actualDriven;
+          }
+        });
+
+        saveRecords();
+        renderTable();
+        updateStats();
+        showToast('Synced! Local data preserved, missing records merged from cloud.');
+        updateSyncStatus('connected');
+        setSyncButtons(true);
+        isCloudConnected = true;
+      }
+    } catch (err) {
+      showToast('Cloud connect error: ' + err.message, 'error');
+      updateSyncStatus('error');
+      setSyncButtons(false);
+    }
+  }
+
+
+
+  function disconnectCloud() {
+    isCloudConnected = false;
+    if (autoSyncTimer) { clearTimeout(autoSyncTimer); autoSyncTimer = null; }
+    updateSyncStatus('offline', 'Offline');
+    setSyncButtons(false);
+    showToast('Disconnected from cloud');
+  }
+
+  function subscribeRealtime() {
+    if (!supabaseClient || !isCloudConnected) return;
+    try {
+      realtimeSubscription = supabaseClient
+        .channel('piling-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: syncTableName }, (payload) => {
+          // Auto-pull on remote changes
+          pullFromCloud();
+        })
+        .subscribe();
+    } catch (e) {
+      console.error('Realtime subscribe error:', e);
+    }
+  }
+
+  function recordToDbRow(r) {
+    return {
+      id: r.id,
+      location: r.location,
+      pile_ref: r.pileRef,
+      pile_type: r.pileType || '',
+      date: r.date,
+      init12m: r.init12m || 0,
+      ext12m: r.ext12m || 0,
+      ext9m: r.ext9m || 0,
+      ext6m: r.ext6m || 0,
+      ext3m: r.ext3m || 0,
+      actual_driven: r.actualDriven || 0,
+      _updated_at: new Date().toISOString()
+    };
+  }
+
+  function dbRowToRecord(row) {
+    return {
+      id: row.id,
+      location: row.location,
+      pileRef: row.pile_ref,
+      pileType: row.pile_type || '',
+      date: row.date,
+      init12m: row.init12m || 0,
+      ext12m: row.ext12m || 0,
+      ext9m: row.ext9m || 0,
+      ext6m: row.ext6m || 0,
+      ext3m: row.ext3m || 0,
+      actualDriven: row.actual_driven || 0
+    };
+  }
+
+  async function pushToCloud() {
+    if (!isCloudConnected || syncInProgress) return;
+    syncInProgress = true;
+    updateSyncStatus('syncing', 'Pushing...');
+    setSyncButtons(true);
+
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+
+    try {
+      // Map JS property names → exact keys the Apps Script expects (confirmed from live response)
+      var pushData = records.map(function(r) {
+        return {
+          id:            r.id,
+          location:      String(r.location || ''),
+          pileRef:       r.pileRef     || 0,
+          pileType:      r.pileType    || '',
+          date:          r.date        || '',
+          init12m:       r.init12m     || 0,
+          ext12m:        r.ext12m      || 0,
+          ext9m:         r.ext9m       || 0,
+          ext6m:         r.ext6m       || 0,
+          ext3m:         r.ext3m       || 0,
+          actualDriven:  r.actualDriven|| 0
+        };
+      });
+      var fd = new FormData();
+      fd.append('data', JSON.stringify(pushData));
+      var response = await fetch(CLOUD_SCRIPT_URL, {
+        method: 'POST',
+        body: fd
+      });
+      var result = await response.json();
+      if (result.status === 'success') {
+        updateSyncStatus('connected', 'Connected');
+        showToast('Pushed ' + records.length + ' records to cloud!');
+      }
+    } catch (e) {
+      console.error('Push error:', e);
+      showToast('Push failed: ' + (e.message || 'Unknown error'));
+      updateSyncStatus('connected', 'Push Failed');
+    } finally {
+      syncInProgress = false;
+      setSyncButtons(true);
+    }
+  }
+
+  async function pullFromCloud() {
+    if (!isCloudConnected || syncInProgress) return;
+    syncInProgress = true;
+    updateSyncStatus('syncing', 'Pulling...');
+    setSyncButtons(true);
+
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+
+    try {
+      var response = await fetch(CLOUD_SCRIPT_URL);
+      var result = await response.json();
+      if (result.status === 'success') {
+        // Robust column name resolver: normalize key to lowercase+no-space, then fuzzy-match
+        var colCache = {};
+        function resolve(row, name) {
+          var norm = name.toLowerCase().replace(/[_\s-]/g, '');
+          if (colCache[norm] !== undefined) return row[colCache[norm]];
+          for (var k in row) {
+            if (k.toLowerCase().replace(/[_\s-]/g, '') === norm) {
+              colCache[norm] = k;
+              return row[k];
+            }
+          }
+          return undefined;
+        }
+        function gv(row, name, fallback) {
+          var val = resolve(row, name);
+          return (val !== undefined && val !== null && val !== '') ? val : fallback;
+        }
+        function gi(row, name, fallback) { var v = gv(row, name, fallback); return v === fallback ? fallback : parseInt(v, 10) || fallback; }
+        function gf(row, name, fallback) { var v = gv(row, name, fallback); return v === fallback ? fallback : parseFloat(v) || fallback; }
+
+        var mapped = result.data.map(function(row) {
+          // Location: prefer string value, fallback to numeric index (0=OSD, 1=Main Building)
+          var locRaw = gv(row, 'location', '');
+          var locationMap = { '0': 'OSD', '1': 'Main Building', 0: 'OSD', 1: 'Main Building' };
+          var location = locationMap[locRaw] || String(locRaw) || '';
+
+          return {
+            id:          gv(row, 'id',              Date.now()) || Date.now(),
+            location:    location,
+            pileRef:     gi(row, 'pileRef',          0) || gi(row, 'Pile Ref No', 0) || 0,
+            pileType:    gv(row, 'pileType',         '') || gv(row, 'Pile Type', '') || '',
+            date:        gv(row, 'date',             '') || '',
+            init12m:     gi(row, 'init12m',           0) || gi(row, 'Starter 12M', 0) || 0,
+            ext12m:      gi(row, 'ext12m',            0) || gi(row, 'Ext 12M', 0) || 0,
+            ext9m:       gi(row, 'ext9m',             0) || gi(row, 'Ext 9M', 0) || 0,
+            ext6m:       gi(row, 'ext6m',             0) || gi(row, 'Ext 6M', 0) || 0,
+            ext3m:       gi(row, 'ext3m',             0) || gi(row, 'Ext 3M', 0) || 0,
+            actualDriven:gf(row, 'actualDriven',     0) || gf(row, 'Actual Driven', 0) || 0
+          };
+        });
+
+        records = mapped;
+        saveRecords();
+        updateStats();
+        renderTable(document.getElementById('searchInput').value);
+        populateLocationOptions();
+        updateSyncStatus('connected', 'Connected');
+        showToast('Pulled ' + mapped.length + ' records from cloud!');
+      }
+    } catch (e) {
+      console.error('Pull error:', e);
+      showToast('Pull failed: ' + (e.message || 'Unknown error'));
+      updateSyncStatus('connected', 'Pull Failed');
+    } finally {
+      syncInProgress = false;
+      setSyncButtons(true);
+    }
+  }
+
+  function scheduleAutoSync() {
+    if (!isCloudConnected) return;
+    if (autoSyncTimer) clearTimeout(autoSyncTimer);
+    autoSyncTimer = setTimeout(() => { scheduleAutoSync(); }, 3000);
+  }
+
+  // Wire up sync buttons
+  document.getElementById('btnSyncConnect').addEventListener('click', connectCloud);
+  document.getElementById('btnSyncDisconnect').addEventListener('click', disconnectCloud);
+  document.getElementById('btnSyncPush').addEventListener('click', pushToCloud);
+  document.getElementById('btnSyncPull').addEventListener('click', pullFromCloud);
+
+})();
+</script>
+
+</body>
+</html>
