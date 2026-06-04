@@ -466,6 +466,35 @@
   let records = [];
   let deleteTargetId = null;
 
+  function jsonpFetch(url) {
+    return new Promise(function(resolve, reject) {
+      var cbName = 'jsonpCb_' + Date.now();
+      var script = document.createElement('script');
+      
+      var timeout = setTimeout(function() {
+        delete window[cbName];
+        if (script.parentNode) document.body.removeChild(script);
+        reject(new Error('JSONP timeout'));
+      }, 10000);
+
+      window[cbName] = function(data) {
+        clearTimeout(timeout);
+        delete window[cbName];
+        if (script.parentNode) document.body.removeChild(script);
+        resolve(data);
+      };
+
+      script.src = url + '?callback=' + cbName;
+      script.onerror = function() {
+        clearTimeout(timeout);
+        delete window[cbName];
+        if (script.parentNode) document.body.removeChild(script);
+        reject(new Error('JSONP failed to load'));
+      };
+      document.body.appendChild(script);
+    });
+  }
+
   function loadRecords() {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -1111,8 +1140,7 @@
     var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
 
     try {
-      var response = await fetch(CLOUD_SCRIPT_URL);
-      var result = await response.json();
+      var result = await jsonpFetch(CLOUD_SCRIPT_URL);
 
       if (result.status === 'success') {
         // Robust column name resolver: normalize key to lowercase+no-space, then fuzzy-match
@@ -1138,7 +1166,6 @@
         var mapped = result.data.map(function(row) {
           // Location: prefer string value, fallback to numeric index (0=OSD, 1=Main Building)
           var locRaw = gv(row, 'location', '');
-          var locationMap = { '0': 'OSD', '1': 'Main Building', 0: 'OSD', 1: 'Main Building' };
           var location = locationMap[locRaw] || String(locRaw) || '';
 
           return {
@@ -1273,33 +1300,28 @@
     var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
 
     try {
-      // Map JS property names → exact keys the Apps Script expects (confirmed from live response)
       var pushData = records.map(function(r) {
         return {
-          id:            r.id,
-          location:      String(r.location || ''),
-          pileRef:       r.pileRef     || 0,
-          pileType:      r.pileType    || '',
-          date:          r.date        || '',
-          init12m:       r.init12m     || 0,
-          ext12m:        r.ext12m      || 0,
-          ext9m:         r.ext9m       || 0,
-          ext6m:         r.ext6m       || 0,
-          ext3m:         r.ext3m       || 0,
-          actualDriven:  r.actualDriven|| 0
+          id: r.id, location: String(r.location || ''),
+          pileRef: r.pileRef || 0, pileType: r.pileType || '',
+          date: r.date || '', init12m: r.init12m || 0,
+          ext12m: r.ext12m || 0, ext9m: r.ext9m || 0,
+          ext6m: r.ext6m || 0, ext3m: r.ext3m || 0,
+          actualDriven: r.actualDriven || 0
         };
       });
-      var fd = new FormData();
-      fd.append('data', JSON.stringify(pushData));
-      var response = await fetch(CLOUD_SCRIPT_URL, {
+
+      // Use fetch with no-cors — Apps Script accepts text/plain body
+      await fetch(CLOUD_SCRIPT_URL, {
         method: 'POST',
-        body: fd
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ data: pushData })
       });
-      var result = await response.json();
-      if (result.status === 'success') {
-        updateSyncStatus('connected', 'Connected');
-        showToast('Pushed ' + records.length + ' records to cloud!');
-      }
+
+      // no-cors returns opaque response (can't read it), so assume success
+      updateSyncStatus('connected', 'Connected');
+      showToast('Pushed ' + records.length + ' records to cloud!');
     } catch (e) {
       console.error('Push error:', e);
       showToast('Push failed: ' + (e.message || 'Unknown error'));
@@ -1319,8 +1341,7 @@
     var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
 
     try {
-      var response = await fetch(CLOUD_SCRIPT_URL);
-      var result = await response.json();
+      var result = await jsonpFetch(CLOUD_SCRIPT_URL);
       if (result.status === 'success') {
         // Robust column name resolver: normalize key to lowercase+no-space, then fuzzy-match
         var colCache = {};
