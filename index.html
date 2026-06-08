@@ -1165,6 +1165,7 @@
 
         var mapped = result.data.map(function(row) {
           // Location: prefer string value, fallback to numeric index (0=OSD, 1=Main Building)
+          var locationMap = { '0': 'OSD', '1': 'Main Building', 0: 'OSD', 1: 'Main Building' };
           var locRaw = gv(row, 'location', '');
           var location = locationMap[locRaw] || String(locRaw) || '';
 
