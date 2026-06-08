@@ -1137,7 +1137,7 @@
   async function connectCloud() {
     updateSyncStatus('connecting');
 
-    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzYQ1S-B72Q1w3n2gqfRDxR49bi0IzC3K4nTW5qnp2y7q_4yu3Hsw5U9cf7VKjR7cT/exec';
 
     try {
       var result = await jsonpFetch(CLOUD_SCRIPT_URL);
@@ -1298,7 +1298,7 @@
     updateSyncStatus('syncing', 'Pushing...');
     setSyncButtons(true);
 
-    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzYQ1S-B72Q1w3n2gqfRDxR49bi0IzC3K4nTW5qnp2y7q_4yu3Hsw5U9cf7VKjR7cT/exec';
 
     try {
       var pushData = records.map(function(r) {
@@ -1339,7 +1339,7 @@
     updateSyncStatus('syncing', 'Pulling...');
     setSyncButtons(true);
 
-    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_wNiH5RFLId02l9UR9Z8crhtWnFs7LgoUFFoXYDCSTUmjSQ5i0ApraMS6-5mRGjZz/exec';
+    var CLOUD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzYQ1S-B72Q1w3n2gqfRDxR49bi0IzC3K4nTW5qnp2y7q_4yu3Hsw5U9cf7VKjR7cT/exec';
 
     try {
       var result = await jsonpFetch(CLOUD_SCRIPT_URL);
