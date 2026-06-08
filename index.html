@@ -293,8 +293,6 @@
   <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
     <div class="stats">
       <span>Total Piles: <strong id="statTotal">0</strong></span>
-
-      
       <span>Total Supply: <strong id="statSupply">0</strong> m</span>
       <span>Total Driven: <strong id="statDriven">0</strong> m</span>
       <span>Weld Joints: <strong id="statWeldJoints">0</strong></span>
@@ -600,7 +598,7 @@
 
   function updateStats() {
     const total = records.length;
-    const osd = records.filter(r => r.location === 'OSD').length;
+    const osd = records.filter(r => r.location === '').length;
     const main = records.filter(r => r.location === 'Main Building').length;
     const supply = records.reduce((s, r) => s + calcSupply(r), 0);
 
@@ -610,7 +608,7 @@
     const totalAllDriven = totalStarterDriven + totalExtDriven;
 
     document.getElementById('statTotal').textContent = total;
-    document.getElementById('statOSD').textContent = osd;
+    document.getElementById('stat').textContent = ;
     document.getElementById('statMain').textContent = main;
     document.getElementById('statSupply').textContent = supply.toFixed(1);
     const totalActualDriven = records.reduce((s, r) => s + (r.actualDriven || 0), 0);
@@ -651,7 +649,7 @@
     // Group by location + pileType combination
     const grouped = {};
     filtered.forEach(r => {
-      const loc = r.location || 'OSD';
+      const loc = r.location || '';
       const pt = r.pileType || 'Uncategorized';
       const key = loc + '::' + pt;
       if (!grouped[key]) grouped[key] = { location: loc, pileType: pt, records: [] };
@@ -1076,7 +1074,7 @@
       } else if (parsed.length > 0) {
         // Remove corrupted records where id is a location name (old Apps Script bug:
         // column A was written as location value, making it an invalid id)
-        var KNOWN_LOCS = { 'OSD': 1, 'Main Building': 1, 'OSD Building': 1, '': 1 };
+        var KNOWN_LOCS = { '': 1, 'Main Building': 1, ' Building': 1, '': 1 };
         var before = parsed.length;
         parsed = parsed.filter(function(r) { return !KNOWN_LOCS[r.id]; });
         if (parsed.length < before) {
